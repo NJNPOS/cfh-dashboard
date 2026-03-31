@@ -131,10 +131,13 @@
     <div class="logo-icon">CFH</div>
     <span>Support Dashboard</span>
   </div>
-  <div class="sync-row">
-    <div class="sync-dot" id="sync-dot"></div>
-    <span id="sync-label">Connecting...</span>
-    <span style="margin-left:8px;color:var(--text3);font-size:11px" id="sync-time"></span>
+  <div style="display:flex;align-items:center;gap:20px">
+    <div style="font-size:12px;color:var(--text2);font-weight:500" id="header-date"></div>
+    <div class="sync-row">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">Connecting...</span>
+      <span style="margin-left:8px;color:var(--text3);font-size:11px" id="sync-time"></span>
+    </div>
   </div>
 </header>
 
@@ -154,6 +157,11 @@
     <div class="metric"><div class="metric-label">CSAT target</div><div class="metric-value green">4.5+</div></div>
   </div>
 
+  <div style="background:var(--blue-bg);border-radius:var(--radius-lg);padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;border:0.5px solid rgba(24,95,165,0.15)">
+    <div style="font-size:13px;font-weight:600;color:var(--blue)" id="my-dash-date"></div>
+    <div style="font-size:12px;color:var(--blue-text);opacity:0.8">Shift summary · CFH Customer Support</div>
+  </div>
+
   <div class="card">
     <div class="row-between">
       <div style="display:flex;align-items:center">
@@ -169,11 +177,11 @@
       <table>
         <thead>
           <tr>
-            <th>#</th><th>Ticket / task</th><th>Tool</th><th>Customer</th><th>Category</th><th>Priority</th><th>Status</th><th>Response time</th><th>Notes</th><th></th>
+            <th>#</th><th>Ticket / task</th><th>Tool</th><th>Customer</th><th>Category</th><th>Priority</th><th>Status</th><th>Response time</th><th>Date added</th><th>Last updated</th><th>Notes</th><th></th>
           </tr>
         </thead>
         <tbody id="task-body">
-          <tr><td colspan="10"><div class="empty-state"><div>📋</div><div>No tasks yet — click "+ Add task" to get started</div></div></td></tr>
+          <tr><td colspan="12"><div class="empty-state"><div>📋</div><div>No tasks yet — click "+ Add task" to get started</div></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -206,6 +214,7 @@
     <div>
       <div style="font-size:17px;font-weight:700;margin-bottom:2px">Cultures for Health — Support Progress</div>
       <div style="font-size:12px;opacity:0.8">VA Coverage · Customer Support Team · Live view</div>
+      <div style="font-size:12px;opacity:0.95;margin-top:4px;font-weight:600" id="client-date"></div>
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;opacity:0.9">
       <div style="width:7px;height:7px;border-radius:50%;background:#4ade80"></div>
@@ -233,9 +242,9 @@
     <div class="card-title">Task status breakdown</div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>Task</th><th>Tool</th><th>Category</th><th>Status</th><th>Response time</th></tr></thead>
+        <thead><tr><th>#</th><th>Task</th><th>Tool</th><th>Category</th><th>Status</th><th>Response time</th><th>Date added</th><th>Last updated</th></tr></thead>
         <tbody id="client-body">
-          <tr><td colspan="6"><div class="empty-state"><div>📊</div><div>No tasks yet</div></div></td></tr>
+          <tr><td colspan="8"><div class="empty-state"><div>📊</div><div>No tasks yet</div></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -424,7 +433,7 @@ async function loadTasks() {
     tasks = (data || []).map(r => ({
       id: r.task_id, dbId: r.id, name: r.name||'', tool: r.tool||'RichPanel',
       customer: r.customer||'', category: r.category||'', priority: r.priority||'Normal',
-      status: r.status||'Open', responseTime: r.response_time||'', notes: r.notes||''
+      status: r.status||'Open', responseTime: r.response_time||'', notes: r.notes||'', dateAdded: r.created_at||'', dateUpdated: r.updated_at||''
     }));
     const { data: meta } = await sb.from('cfh_meta').select('value').eq('key','task_id_counter').single();
     if (meta) taskId = parseInt(meta.value) || 0;
@@ -485,10 +494,21 @@ function getToolTag(t) {
 function iOpts(v, arr) { return arr.map(o => `<option${v===o?' selected':''}>${o}</option>`).join(''); }
 function inp(w) { return `style="font-size:12px;padding:4px 7px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);width:${w}px;font-family:inherit"`; }
 
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function fmtDateTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
+
 function renderTasks() {
   const tb = document.getElementById('task-body');
   if (tasks.length === 0) {
-    tb.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div>📋</div><div>No tasks yet — click "+ Add task" to get started</div></div></td></tr>';
+    tb.innerHTML = '<tr><td colspan="12"><div class="empty-state"><div>📋</div><div>No tasks yet — click "+ Add task" to get started</div></div></td></tr>';
     updateMetrics(); renderClientView(); return;
   }
   tb.innerHTML = '';
@@ -503,6 +523,8 @@ function renderTasks() {
       `<td><select onchange="upd(${i},'priority',this.value)">${iOpts(t.priority,['Low','Normal','High','Urgent'])}</select></td>` +
       `<td><select onchange="upd(${i},'status',this.value)">${iOpts(t.status,['Open','In progress','Snoozed','On hold','Resolved','Closed'])}</select></td>` +
       `<td><input ${inp(78)} value="${escH(t.responseTime)}" placeholder="e.g. 45 min" oninput="upd(${i},'responseTime',this.value)"></td>` +
+      `<td style="font-size:12px;color:var(--text2);white-space:nowrap">${fmtDate(t.dateAdded)}</td>` +
+      `<td style="font-size:12px;color:var(--text2);white-space:nowrap">${fmtDateTime(t.dateUpdated)}</td>` +
       `<td><input ${inp(115)} value="${escH(t.notes)}" placeholder="Notes" oninput="upd(${i},'notes',this.value)"></td>` +
       `<td><button onclick="removeTask(${i})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;padding:2px 6px;line-height:1" title="Remove">×</button></td>`;
     tb.appendChild(tr);
@@ -513,7 +535,8 @@ function renderTasks() {
 
 function addTask() {
   taskId++;
-  const task = { id: taskId, dbId: null, name: 'Ticket #'+taskId, tool: 'RichPanel', customer: '', category: '', priority: 'Normal', status: 'Open', responseTime: '', notes: '' };
+  const now = new Date().toISOString();
+  const task = { id: taskId, dbId: null, name: 'Ticket #'+taskId, tool: 'RichPanel', customer: '', category: '', priority: 'Normal', status: 'Open', responseTime: '', notes: '', dateAdded: now, dateUpdated: now };
   tasks.push(task);
   renderTasks();
   saveTask(task);
@@ -536,6 +559,7 @@ function clearAll() {
 
 function upd(i, k, v) {
   tasks[i][k] = v;
+  tasks[i].dateUpdated = new Date().toISOString();
   updateMetrics();
   renderClientView();
   clearTimeout(saveTimer);
@@ -559,12 +583,12 @@ function updateMetrics() {
 function renderClientView() {
   const cb = document.getElementById('client-body');
   if (tasks.length === 0) {
-    cb.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div>📊</div><div>No tasks yet</div></div></td></tr>';
+    cb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div>📊</div><div>No tasks yet</div></div></td></tr>';
   } else {
     cb.innerHTML = '';
     tasks.forEach(t => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td style="color:var(--text2);font-size:12px">#${t.id}</td><td style="font-size:13px">${escH(t.name)}</td><td>${getToolTag(t.tool)}</td><td style="font-size:12px;color:var(--text2)">${escH(t.category||'—')}</td><td>${getStatusBadge(t.status)}</td><td style="font-size:12px;color:var(--text2)">${escH(t.responseTime||'—')}</td>`;
+      tr.innerHTML = `<td style="color:var(--text2);font-size:12px">#${t.id}</td><td style="font-size:13px">${escH(t.name)}</td><td>${getToolTag(t.tool)}</td><td style="font-size:12px;color:var(--text2)">${escH(t.category||'—')}</td><td>${getStatusBadge(t.status)}</td><td style="font-size:12px;color:var(--text2)">${escH(t.responseTime||'—')}</td><td style="font-size:12px;color:var(--text2);white-space:nowrap">${fmtDate(t.dateAdded)}</td><td style="font-size:12px;color:var(--text2);white-space:nowrap">${fmtDateTime(t.dateUpdated)}</td>`;
       cb.appendChild(tr);
     });
   }
@@ -675,6 +699,21 @@ function onCheck(el) {
   el.checked ? lbl.classList.add('done') : lbl.classList.remove('done');
   saveChecklist();
 }
+
+// Set live date displays
+function updateDateDisplays() {
+  const now = new Date();
+  const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const dateStr = now.toLocaleDateString('en-US', opts);
+  const el = document.getElementById('client-date');
+  if (el) el.textContent = 'Report date: ' + dateStr;
+  const headerDate = document.getElementById('header-date');
+  if (headerDate) headerDate.textContent = dateStr;
+  const myDash = document.getElementById('my-dash-date');
+  if (myDash) myDash.textContent = 'Today: ' + dateStr;
+}
+updateDateDisplays();
+setInterval(updateDateDisplays, 60000);
 
 const saved = loadChecklist();
 buildChecks(rpItems, 'rp-checks', saved);
