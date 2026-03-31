@@ -376,7 +376,7 @@ const SUPABASE_KEY = 'sb_publishable_Q2H-iXfTXmVVnMDx1EIRBw_dgUpI2On';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const ANTHROPIC_KEY = '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';
+
 
 let tasks = [];
 let taskId = 0;
@@ -609,7 +609,7 @@ async function generateAI(mode) {
   document.getElementById('ai-loading').style.display = 'block';
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://cfh-ai-proxy.rosalindapadilla2006.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -624,7 +624,7 @@ async function generateAI(mode) {
     document.getElementById('ai-output').textContent = text;
     document.getElementById('ai-result').style.display = 'block';
   } catch(e) {
-    document.getElementById('ai-output').textContent = 'Error: Could not connect to AI. Please check your API key in the code.';
+    document.getElementById('ai-output').textContent = 'Error: Could not connect. Please check your Cloudflare Worker is deployed correctly.';
     document.getElementById('ai-result').style.display = 'block';
   }
   document.getElementById('ai-loading').style.display = 'none';
