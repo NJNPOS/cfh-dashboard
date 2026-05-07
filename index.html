@@ -102,7 +102,6 @@
   .saved-flash.show{opacity:1}
   .client-header{background:linear-gradient(135deg,#185FA5,#0C447C);color:#fff;border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;gap:16px}
   .client-logo{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff}
-  .loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.85);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:12px}
   .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .empty-state{text-align:center;padding:40px 20px;color:var(--text2)}
@@ -121,12 +120,6 @@
 </head>
 <body>
 
-<div class="loading-overlay" id="loading">
-  <div class="spinner"></div>
-  <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Connecting to dashboard...</div>
-  <button onclick="document.getElementById('loading').style.display='none'" style="font-size:12px;padding:5px 14px;border-radius:6px;border:0.5px solid #ccc;background:#fff;cursor:pointer;color:#666;margin-top:4px">Skip — open dashboard now</button>
-</div>
-
 <header>
   <div class="logo">
     <div class="logo-icon">CFH</div>
@@ -136,7 +129,7 @@
     <div style="font-size:12px;color:var(--text2);font-weight:500" id="header-date"></div>
     <div class="sync-row">
       <div class="sync-dot" id="sync-dot"></div>
-      <span id="sync-label">Connecting...</span>
+      <span id="sync-label">Loading tasks...</span>
       <span style="margin-left:8px;color:var(--text3);font-size:11px" id="sync-time"></span>
     </div>
   </div>
@@ -428,17 +421,7 @@ function showSavedFlash() {
   document.getElementById('sync-time').textContent = 'Last saved: ' + now.toLocaleTimeString();
 }
 
-function hideLoading() {
-  const el = document.getElementById('loading');
-  if (el) el.style.display = 'none';
-}
-
-// Always hide loading after 4 seconds max — no matter what
-setTimeout(hideLoading, 4000);
-
 async function loadTasks() {
-  // Hide loading immediately — show dashboard right away
-  hideLoading();
   try {
     setSyncStatus('saving');
     // Race the Supabase call against a 6-second timeout
